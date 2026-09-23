@@ -1,0 +1,9 @@
+{
+  "name": "cleankart",
+  "version": "1.0.0",
+  "description": "CleanKart - House Help Booking App for Hyderabad",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  }
+}

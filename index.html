@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#16a34a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="CleanKart" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/icon.svg" />
+  <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+
+  <title>CleanKart – House Help in Hyderabad</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: { 50:'#f0fdf4',100:'#dcfce7',200:'#bbf7d0',300:'#86efac',400:'#4ade80',500:'#22c55e',600:'#16a34a',700:'#15803d',800:'#166534',900:'#14532d' },
+            accent: { 500:'#10b981',600:'#059669' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .card-hover { transition: all 0.2s ease; }
+    .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1); }
+    .fade-in { animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+    .status-pending { @apply bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300; }
+    .status-accepted { @apply bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300; }
+    .status-in_progress { @apply bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300; }
+    .status-completed { @apply bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300; }
+    .status-cancelled { @apply bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300; }
+  </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen transition-colors">
+  <div id="app" class="min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="sticky top-0 z-40 bg-white/90 dark:bg-gray-900/90 backdrop-blur border-b border-gray-200 dark:border-gray-800">
+      <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
+        <div class="flex items-center gap-2 cursor-pointer" onclick="goHome()">
+          <span class="text-2xl">🧼</span>
+          <span class="font-bold text-xl text-primary-600 dark:text-primary-400">CleanKart</span>
+          <span class="text-xs bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 px-2 py-0.5 rounded-full hidden sm:inline">Hyderabad</span>
+        </div>
+        <div class="flex items-center gap-3">
+          
+          <button id="installBtn" class="hidden text-xs font-medium px-3 py-1.5 rounded-lg bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300">
+            📲 Install App
+          </button>
+
+          <button onclick="toggleDark()" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800" title="Toggle theme">
+            <span id="themeIcon">🌙</span>
+          </button>
+          <div id="authButtons" class="flex gap-2">
+            <button onclick="showPage('login')" class="text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">Login</button>
+            <button onclick="showPage('register')" class="text-sm font-medium px-3 py-1.5 rounded-lg bg-primary-600 text-white hover:bg-primary-700">Sign Up</button>
+          </div>
+          <div id="userMenu" class="hidden items-center gap-2">
+            <span id="userName" class="text-sm font-medium hidden sm:inline"></span>
+            <button onclick="logout()" class="text-sm text-red-600 dark:text-red-400 px-2 py-1">Logout</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main -->
+    <main id="main" class="flex-1 max-w-5xl mx-auto w-full px-4 py-6"></main>
+
+    <!-- Bottom Nav (mobile) -->
+    <nav id="bottomNav" class="hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 z-40 safe-bottom">
+      <div class="flex justify-around py-2 max-w-lg mx-auto">
+        <button onclick="showPage('home')" class="nav-btn flex flex-col items-center text-xs gap-0.5 p-1" data-page="home">
+          <span class="text-xl">🏠</span><span>Home</span>
+        </button>
+        <button onclick="showPage('bookings')" class="nav-btn flex flex-col items-center text-xs gap-0.5 p-1" data-page="bookings">
+          <span class="text-xl">📋</span><span>Bookings</span>
+        </button>
+        <button onclick="showPage('profile')" class="nav-btn flex flex-col items-center text-xs gap-0.5 p-1" data-page="profile">
+          <span class="text-xl">👤</span><span>Profile</span>
+        </button>
+      </div>
+    </nav>
+  </div>
+
+  <script>
+    // ========== STATE ==========
+    let state = {
+      token: localStorage.getItem('ck_token') || null,
+      user: JSON.parse(localStorage.getItem('ck_user') || 'null'),
+      services: [],
+      bookings: [],
+      helpers: [],
+      stats: {},
+      dark: localStorage.getItem('ck_dark') === '1'
+    };
+
+    // Apply dark mode
+    if (state.dark) document.documentElement.classList.add('dark');
+    document.getElementById('themeIcon').textContent = state.dark ? '☀️' : '🌙';
+
+    function toggleDark() {
+      state.dark = !state.dark;
+      document.documentElement.classList.toggle('dark', state.dark);
+      localStorage.setItem('ck_dark', state.dark ? '1' : '0');
+      document.getElementById('themeIcon').textContent = state.dark ? '☀️' : '🌙';
+    }
+
+    // ========== API ==========
+    async function api(path, opts = {}) {
+      const headers = { 'Content-Type': 'application/json' };
+      if (state.token) headers['Authorization'] = 'Bearer ' + state.token;
+      const res = await fetch('/api' + path, { ...opts, headers });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Request failed');
+      return data;
+    }
+
+    function setAuth(token, user) {
+      state.token = token;
+      state.user = user;
+      localStorage.setItem('ck_token', token);
+      localStorage.setItem('ck_user', JSON.stringify(user));
+      updateHeader();
+    }
+
+    function logout() {
+      state.token = null;
+      state.user = null;
+      localStorage.removeItem('ck_token');
+      localStorage.removeItem('ck_user');
+      updateHeader();
+      showPage('home');
+    }
+
+    function updateHeader() {
+      const authBtns = document.getElementById('authButtons');
+      const userMenu = document.getElementById('userMenu');
+      const bottomNav = document.getElementById('bottomNav');
+      if (state.user) {
+        authBtns.classList.add('hidden');
+        userMenu.classList.remove('hidden');
+        userMenu.classList.add('flex');
+        document.getElementById('userName').textContent = state.user.name.split(' ')[0];
+        bottomNav.classList.remove('hidden');
+        document.getElementById('main').classList.add('pb-20');
+      } else {
+        authBtns.classList.remove('hidden');
+        userMenu.classList.add('hidden');
+        bottomNav.classList.add('hidden');
+        document.getElementById('main').classList.remove('pb-20');
+      }
+    }
+
+    // ========== PAGES ==========
+    function showPage(page, data) {
+      const main = document.getElementById('main');
+      main.innerHTML = '';
+      main.classList.add('fade-in');
+      document.querySelectorAll('.nav-btn').forEach(b => {
+        b.classList.toggle('text-primary-600', b.dataset.page === page);
+        b.classList.toggle('text-gray-500', b.dataset.page !== page);
+      });
+
+      if (page === 'home') renderHome();
+      else if (page === 'login') renderLogin();
+      else if (page === 'register') renderRegister();
+      else if (page === 'bookings') renderBookings();
+      else if (page === 'profile') renderProfile();
+      else if (page === 'book') renderBook(data);
+      else if (page === 'helperJobs') renderHelperJobs();
+    }
+
+    function goHome() { showPage('home'); }
+
+    // HOME
+    async function renderHome() {
+      const main = document.getElementById('main');
+      main.innerHTML = `<div class="text-center py-8"><div class="animate-pulse text-primary-500 text-lg">Loading services...</div></div>`;
+      try {
+        state.services = await api('/services');
+      } catch (e) {
+        main.innerHTML = `<div class="text-red-500 text-center py-10">${e.message}</div>`;
+        return;
+      }
+
+      let hero = `
+        <div class="mb-8 text-center">
+          <h1 class="text-2xl sm:text-3xl font-bold mb-2">Clean Home, Happy Life</h1>
+          <p class="text-gray-500 dark:text-gray-400 text-sm sm:text-base">Trusted house help in Hyderabad • Book in 30 seconds</p>
+        </div>`;
+
+      if (state.user?.role === 'helper') {
+        hero += `
+          <div class="mb-6 p-4 rounded-2xl bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div>
+              <p class="font-semibold">Helper Dashboard</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">You are logged in as a service provider</p>
+            </div>
+            <button onclick="showPage('helperJobs')" class="px-4 py-2 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700">View Jobs</button>
+          </div>`;
+      }
+
+      const cards = state.services.map(s => `
+        <div class="card-hover bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700 cursor-pointer" onclick="showPage('book', '${s.id}')">
+          <div class="text-3xl mb-2">${s.icon}</div>
+          <h3 class="font-semibold text-base">${s.name}</h3>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">${s.desc}</p>
+          <div class="mt-3 flex items-center justify-between">
+            <span class="font-bold text-primary-600 dark:text-primary-400">₹${s.price}</span>
+            <span class="text-xs text-gray-400">${s.duration} min</span>
+          </div>
+        </div>`).join('');
+
+      main.innerHTML = hero + `<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">${cards}</div>`;
+    }
+
+    // BOOK FLOW
+    async function renderBook(serviceId) {
+      if (!state.user) { showPage('login'); return; }
+      if (state.user.role !== 'customer') {
+        document.getElementById('main').innerHTML = `<div class="text-center py-16"><p class="text-lg">Only customers can book services.</p><button onclick="showPage('home')" class="mt-4 text-primary-600">Go Home</button></div>`;
+        return;
+      }
+      const svc = state.services.find(s => s.id === serviceId) || (await api('/services')).find(s => s.id === serviceId);
+      if (!svc) return showPage('home');
+
+      const today = new Date().toISOString().slice(0,10);
+      document.getElementById('main').innerHTML = `
+        <button onclick="showPage('home')" class="text-sm text-primary-600 mb-4 flex items-center gap-1">← Back</button>
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-100 dark:border-gray-700 max-w-md mx-auto">
+          <div class="flex items-center gap-3 mb-4">
+            <span class="text-4xl">${svc.icon}</span>
+            <div>
+              <h2 class="font-bold text-lg">${svc.name}</h2>
+              <p class="text-primary-600 font-semibold">₹${svc.price} · ${svc.duration} min</p>
+            </div>
+          </div>
+          <p class="text-sm text-gray-500 mb-5">${svc.desc}</p>
+          <form id="bookForm" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium mb-1">Date</label>
+              <input type="date" name="date" min="${today}" required class="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 outline-none" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Time Slot</label>
+              <select name="time" required class="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 outline-none">
+                <option value="">Select time</option>
+                <option>08:00 AM</option><option>09:00 AM</option><option>10:00 AM</option>
+                <option>11:00 AM</option><option>12:00 PM</option><option>02:00 PM</option>
+                <option>03:00 PM</option><option>04:00 PM</option><option>05:00 PM</option>
+                <option>06:00 PM</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Address in Hyderabad</label>
+              <textarea name="address" rows="2" required placeholder="Flat no, Society, Area (e.g. Madhapur)" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 outline-none"></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Pincode</label>
+              <input type="text" name="pincode" pattern="[0-9]{6}" placeholder="500081" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 outline-none" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Notes (optional)</label>
+              <input type="text" name="notes" placeholder="Any special instructions" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-primary-500 outline-none" />
+            </div>
+            <button type="submit" class="w-full py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl transition">Confirm Booking · ₹${svc.price}</button>
+          </form>
+          <p id="bookMsg" class="text-sm mt-3 text-center"></p>
+        </div>`;
+
+      document.getElementById('bookForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const msg = document.getElementById('bookMsg');
+        msg.textContent = 'Booking...';
+        msg.className = 'text-sm mt-3 text-center text-gray-500';
+        try {
+          await api('/bookings', {
+            method: 'POST',
+            body: JSON.stringify({
+              serviceId: svc.id,
+              date: fd.get('date'),
+              time: fd.get('time'),
+              address: fd.get('address'),
+              pincode: fd.get('pincode'),
+              notes: fd.get('notes')
+            })
+          });
+          msg.textContent = '✅ Booked successfully!';
+          msg.className = 'text-sm mt-3 text-center text-green-600';
+          setTimeout(() => showPage('bookings'), 1200);
+        } catch (err) {
+          msg.textContent = err.message;
+          msg.className = 'text-sm mt-3 text-center text-red-500';
+        }
+      };
+    }
+
+    // BOOKINGS
+    async function renderBookings() {
+      if (!state.user) { showPage('login'); return; }
+      const main = document.getElementById('main');
+      main.innerHTML = `<div class="text-center py-8 text-gray-500">Loading bookings...</div>`;
+      try {
+        state.bookings = await api('/bookings');
+      } catch (e) {
+        main.innerHTML = `<div class="text-red-500 text-center">${e.message}</div>`;
+        return;
+      }
+
+      if (state.bookings.length === 0) {
+        main.innerHTML = `
+          <div class="text-center py-16">
+            <div class="text-5xl mb-4">📭</div>
+            <p class="text-lg font-medium">No bookings yet</p>
+            <p class="text-sm text-gray-500 mt-1">Book a service to get started</p>
+            <button onclick="showPage('home')" class="mt-6 px-5 py-2.5 bg-primary-600 text-white rounded-xl">Browse Services</button>
+          </div>`;
+        return;
+      }
+
+      const cards = state.bookings.map(b => {
+        const statusClass = 'status-' + b.status;
+        let actions = '';
+        if (state.user.role === 'helper' && b.status === 'pending') {
+          actions = `<button onclick="updateBooking('${b.id}','accept')" class="text-xs px-3 py-1.5 bg-primary-600 text-white rounded-lg">Accept</button>`;
+        }
+        if (state.user.role === 'helper' && b.status === 'accepted' && b.helperId === state.user.id) {
+          actions = `<button onclick="updateBooking('${b.id}','start')" class="text-xs px-3 py-1.5 bg-purple-600 text-white rounded-lg">Start Job</button>`;
+        }
+        if (state.user.role === 'helper' && b.status === 'in_progress' && b.helperId === state.user.id) {
+          actions = `<button onclick="updateBooking('${b.id}','complete')" class="text-xs px-3 py-1.5 bg-green-600 text-white rounded-lg">Mark Complete</button>`;
+        }
+        if (state.user.role === 'customer' && b.status === 'completed' && !b.rating) {
+          actions = `<button onclick="rateBooking('${b.id}')" class="text-xs px-3 py-1.5 bg-amber-500 text-white rounded-lg">Rate</button>`;
+        }
+        if (['pending','accepted'].includes(b.status) && (state.user.role === 'customer' || (state.user.role === 'helper' && b.helperId === state.user.id))) {
+          actions += ` <button onclick="updateBooking('${b.id}','cancel')" class="text-xs px-3 py-1.5 border border-red-300 text-red-600 rounded-lg">Cancel</button>`;
+        }
+
+        return `
+          <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700">
+            <div class="flex justify-between items-start gap-2">
+              <div class="flex items-center gap-2">
+                <span class="text-2xl">${b.serviceIcon || '🧼'}</span>
+                <div>
+                  <h3 class="font-semibold">${b.serviceName || 'Service'}</h3>
+                  <p class="text-xs text-gray-500">${b.date} · ${b.time}</p>
+                </div>
+              </div>
+              <span class="text-xs px-2 py-1 rounded-full font-medium ${statusClass}">${b.status.replace('_',' ')}</span>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">${b.address}</p>
+            <div class="flex justify-between items-center mt-3">
+              <span class="font-bold text-primary-600">₹${b.price}</span>
+              <div class="flex gap-2">${actions}</div>
+            </div>
+            ${b.rating ? `<p class="text-xs mt-2 text-amber-600">★ ${b.rating} ${b.review ? '– ' + b.review : ''}</p>` : ''}
+            ${b.helperName && state.user.role === 'customer' ? `<p class="text-xs text-gray-500 mt-1">Helper: ${b.helperName}</p>` : ''}
+            ${b.customerName && state.user.role === 'helper' ? `<p class="text-xs text-gray-500 mt-1">Customer: ${b.customerName}</p>` : ''}
+          </div>`;
+      }).join('');
+
+      main.innerHTML = `<h2 class="text-xl font-bold mb-4">My Bookings</h2><div class="space-y-3">${cards}</div>`;
+    }
+
+    async function updateBooking(id, action) {
+      try {
+        await api('/bookings/' + id, { method: 'PUT', body: JSON.stringify({ action }) });
+        renderBookings();
+      } catch (e) { alert(e.message); }
+    }
+
+    function rateBooking(id) {
+      const rating = prompt('Rate 1-5 stars:');
+      if (!rating) return;
+      const review = prompt('Optional review:') || '';
+      api('/bookings/' + id, { method: 'PUT', body: JSON.stringify({ action: 'rate', rating: Number(rating), review }) })
+        .then(() => renderBookings())
+        .catch(e => alert(e.message));
+    }
+
+    // HELPER JOBS (extra view)
+    function renderHelperJobs() {
+      showPage('bookings');
+    }
+
+    // PROFILE
+    async function renderProfile() {
+      if (!state.user) { showPage('login'); return; }
+      let statsHtml = '';
+      try {
+        state.stats = await api('/stats');
+        if (state.user.role === 'customer') {
+          statsHtml = `
+            <div class="grid grid-cols-3 gap-3 mb-6">
+              <div class="bg-white dark:bg-gray-800 rounded-xl p-3 text-center border dark:border-gray-700">
+                <div class="text-xl font-bold">${state.stats.total || 0}</div>
+                <div class="text-xs text-gray-500">Total</div>
+              </div>
+              <div class="bg-white dark:bg-gray-800 rounded-xl p-3 text-center border dark:border-gray-700">
+                <div class="text-xl font-bold text-green-600">${state.stats.completed || 0}</div>
+                <div class="text-xs text-gray-500">Completed</div>
+              </div>
+              <div class="bg-white dark:bg-gray-800 rounded-xl p-3 text-center border dark:border-gray-700">
+                <div class="text-xl font-bold text-amber-600">${state.stats.pending || 0}</div>
+                <div class="text-xs text-gray-500">Active</div>
+              </div>
+            </div>`;
+        } else if (state.user.role === 'helper') {
+          statsHtml = `
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+              <div class="bg-white dark:bg-gray-800 rounded-xl p-3 text-center border dark:border-gray-700">
+                <div class="text-xl font-bold">₹${state.stats.earnings || 0}</div>
+                <div class="text-xs text-gray-500">Earnings</div>
+              </div>
+              <div class="bg-white dark:bg-gray-800 rounded-xl p-3 text-center border dark:border-gray-700">
+                <div class="text-xl font-bold">${state.stats.completed || 0}</div>
+                <div class="text-xs text-gray-500">Jobs Done</div>
+              </div>
+              <div class="bg-white dark:bg-gray-800 rounded-xl p-3 text-center border dark:border-gray-700">
+                <div class="text-xl font-bold text-amber-600">${state.stats.pending || 0}</div>
+                <div class="text-xs text-gray-500">Open Jobs</div>
+              </div>
+              <div class="bg-white dark:bg-gray-800 rounded-xl p-3 text-center border dark:border-gray-700">
+                <div class="text-xl font-bold">${state.user.rating || 5}★</div>
+                <div class="text-xs text-gray-500">Rating</div>
+              </div>
+            </div>
+            <div class="mb-4 flex items-center justify-between bg-white dark:bg-gray-800 p-4 rounded-xl border dark:border-gray-700">
+              <span class="font-medium">Available for jobs</span>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="availToggle" class="sr-only peer" ${state.user.available !== false ? 'checked' : ''}>
+                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+              </label>
+            </div>`;
+        }
+      } catch {}
+
+      document.getElementById('main').innerHTML = `
+        <div class="max-w-md mx-auto">
+          <div class="text-center mb-6">
+            <div class="w-20 h-20 mx-auto rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-3xl font-bold text-primary-700 dark:text-primary-300">
+              ${state.user.name.charAt(0).toUpperCase()}
+            </div>
+            <h2 class="text-xl font-bold mt-3">${state.user.name}</h2>
+            <p class="text-sm text-gray-500">${state.user.phone} · ${state.user.role}</p>
+            ${state.user.address ? `<p class="text-xs text-gray-400 mt-1">${state.user.address}</p>` : ''}
+          </div>
+          ${statsHtml}
+          <button onclick="logout()" class="w-full py-3 border border-red-300 text-red-600 rounded-xl font-medium hover:bg-red-50 dark:hover:bg-red-900/20">Logout</button>
+        </div>`;
+
+      const toggle = document.getElementById('availToggle');
+      if (toggle) {
+        toggle.onchange = async () => {
+          try {
+            await api('/helper/availability', { method: 'PUT', body: JSON.stringify({ available: toggle.checked }) });
+            state.user.available = toggle.checked;
+            localStorage.setItem('ck_user', JSON.stringify(state.user));
+          } catch (e) { alert(e.message); toggle.checked = !toggle.checked; }
+        };
+      }
+    }
+
+    // LOGIN (OTP style)
+    function renderLogin() {
+      document.getElementById('main').innerHTML = `
+        <div class="max-w-sm mx-auto">
+          <h2 class="text-2xl font-bold text-center mb-2">Login with OTP</h2>
+          <p class="text-center text-sm text-gray-500 mb-6">We'll send a 6-digit code to your phone</p>
+          
+          <div id="otpStep1">
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium mb-1">Phone Number</label>
+                <input type="tel" id="loginPhone" maxlength="10" placeholder="10-digit mobile" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-primary-500 outline-none text-lg tracking-wider" />
+              </div>
+              <button onclick="sendLoginOTP()" id="sendOtpBtn" class="w-full py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl">Send OTP</button>
+            </div>
+          </div>
+
+          <div id="otpStep2" class="hidden space-y-4">
+            <div class="text-center">
+              <p class="text-sm text-gray-500">OTP sent to <span id="otpPhoneDisplay" class="font-medium text-gray-800 dark:text-gray-200"></span></p>
+              <p id="demoOtpBox" class="mt-2 text-sm bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-3 py-2 rounded-lg inline-block"></p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Enter 6-digit OTP</label>
+              <input type="text" id="loginOtp" maxlength="6" inputmode="numeric" placeholder="• • • • • •" class="w-full px-3 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-primary-500 outline-none text-center text-2xl tracking-[0.5em] font-mono" />
+            </div>
+            <button onclick="verifyLoginOTP()" class="w-full py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl">Verify & Login</button>
+            <button onclick="backToPhone()" class="w-full text-sm text-gray-500 py-2">← Change number</button>
+            <p class="text-center text-xs text-gray-400">Didn't receive? <button onclick="sendLoginOTP()" class="text-primary-600">Resend OTP</button></p>
+          </div>
+
+          <p class="text-center text-sm mt-6 text-gray-500">No account? <button onclick="showPage('register')" class="text-primary-600 font-medium">Sign up with OTP</button></p>
+          
+          <div class="mt-6 p-3 bg-gray-100 dark:bg-gray-800 rounded-xl text-xs text-gray-600 dark:text-gray-400">
+            <p class="font-medium mb-1">Demo accounts (OTP works for these):</p>
+            <p>Customer: 9876543210</p>
+            <p>Helper: 9123456789</p>
+          </div>
+          <p id="loginMsg" class="text-sm text-center mt-3"></p>
+        </div>`;
+    }
+
+    let currentLoginPhone = '';
+
+    async function sendLoginOTP() {
+      const phone = document.getElementById('loginPhone').value.trim();
+      const msg = document.getElementById('loginMsg');
+      if (!/^\d{10}$/.test(phone)) {
+        msg.textContent = 'Enter valid 10-digit phone';
+        msg.className = 'text-sm text-center mt-3 text-red-500';
+        return;
+      }
+      const btn = document.getElementById('sendOtpBtn');
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+      try {
+        const data = await api('/send-otp', { method: 'POST', body: JSON.stringify({ phone, purpose: 'login' }) });
+        currentLoginPhone = phone;
+        document.getElementById('otpStep1').classList.add('hidden');
+        document.getElementById('otpStep2').classList.remove('hidden');
+        document.getElementById('otpPhoneDisplay').textContent = phone;
+        // Show demo OTP
+        if (data.demoOTP) {
+          document.getElementById('demoOtpBox').textContent = 'Demo OTP: ' + data.demoOTP;
+          document.getElementById('demoOtpBox').classList.remove('hidden');
+        }
+        msg.textContent = '';
+        document.getElementById('loginOtp').focus();
+      } catch (err) {
+        msg.textContent = err.message;
+        msg.className = 'text-sm text-center mt-3 text-red-500';
+      }
+      btn.disabled = false;
+      btn.textContent = 'Send OTP';
+    }
+
+    async function verifyLoginOTP() {
+      const otp = document.getElementById('loginOtp').value.trim();
+      const msg = document.getElementById('loginMsg');
+      if (!/^\d{6}$/.test(otp)) {
+        msg.textContent = 'Enter 6-digit OTP';
+        msg.className = 'text-sm text-center mt-3 text-red-500';
+        return;
+      }
+      try {
+        const data = await api('/verify-otp', {
+          method: 'POST',
+          body: JSON.stringify({ phone: currentLoginPhone, otp })
+        });
+        setAuth(data.token, data.user);
+        showPage('home');
+      } catch (err) {
+        msg.textContent = err.message;
+        msg.className = 'text-sm text-center mt-3 text-red-500';
+      }
+    }
+
+    function backToPhone() {
+      document.getElementById('otpStep1').classList.remove('hidden');
+      document.getElementById('otpStep2').classList.add('hidden');
+      document.getElementById('loginMsg').textContent = '';
+    }
+
+    
+    // REGISTER (OTP style)
+    function renderRegister() {
+      document.getElementById('main').innerHTML = `
+        <div class="max-w-sm mx-auto">
+          <h2 class="text-2xl font-bold text-center mb-2">Sign up with OTP</h2>
+          <p class="text-center text-sm text-gray-500 mb-6">Quick & secure registration</p>
+          
+          <div id="regStep1" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium mb-1">Full Name</label>
+              <input type="text" id="regName" required placeholder="Your name" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-primary-500 outline-none" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Phone Number</label>
+              <input type="tel" id="regPhone" maxlength="10" placeholder="10-digit mobile" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-primary-500 outline-none text-lg tracking-wider" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">I want to</label>
+              <select id="regRole" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-primary-500 outline-none">
+                <option value="customer">Book services (Customer)</option>
+                <option value="helper">Provide services (Helper)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Address (optional)</label>
+              <input type="text" id="regAddress" placeholder="Area in Hyderabad" class="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-primary-500 outline-none" />
+            </div>
+            <button onclick="sendRegOTP()" id="regSendBtn" class="w-full py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl">Send OTP</button>
+          </div>
+
+          <div id="regStep2" class="hidden space-y-4">
+            <div class="text-center">
+              <p class="text-sm text-gray-500">OTP sent to <span id="regOtpPhone" class="font-medium"></span></p>
+              <p id="regDemoOtp" class="mt-2 text-sm bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-3 py-2 rounded-lg inline-block"></p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Enter 6-digit OTP</label>
+              <input type="text" id="regOtp" maxlength="6" inputmode="numeric" placeholder="• • • • • •" class="w-full px-3 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-primary-500 outline-none text-center text-2xl tracking-[0.5em] font-mono" />
+            </div>
+            <button onclick="verifyRegOTP()" class="w-full py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl">Verify & Create Account</button>
+            <button onclick="backToRegForm()" class="w-full text-sm text-gray-500 py-2">← Go back</button>
+          </div>
+
+          <p class="text-center text-sm mt-6 text-gray-500">Already have account? <button onclick="showPage('login')" class="text-primary-600 font-medium">Login with OTP</button></p>
+          <p id="regMsg" class="text-sm text-center mt-3"></p>
+        </div>`;
+    }
+
+    let regData = {};
+
+    async function sendRegOTP() {
+      const name = document.getElementById('regName').value.trim();
+      const phone = document.getElementById('regPhone').value.trim();
+      const role = document.getElementById('regRole').value;
+      const address = document.getElementById('regAddress').value.trim();
+      const msg = document.getElementById('regMsg');
+
+      if (!name) { msg.textContent = 'Name is required'; msg.className = 'text-sm text-center mt-3 text-red-500'; return; }
+      if (!/^\d{10}$/.test(phone)) { msg.textContent = 'Enter valid 10-digit phone'; msg.className = 'text-sm text-center mt-3 text-red-500'; return; }
+
+      const btn = document.getElementById('regSendBtn');
+      btn.disabled = true; btn.textContent = 'Sending...';
+      try {
+        const data = await api('/send-otp', { method: 'POST', body: JSON.stringify({ phone, purpose: 'register' }) });
+        regData = { name, phone, role, address };
+        document.getElementById('regStep1').classList.add('hidden');
+        document.getElementById('regStep2').classList.remove('hidden');
+        document.getElementById('regOtpPhone').textContent = phone;
+        if (data.demoOTP) {
+          document.getElementById('regDemoOtp').textContent = 'Demo OTP: ' + data.demoOTP;
+        }
+        msg.textContent = '';
+        document.getElementById('regOtp').focus();
+      } catch (err) {
+        msg.textContent = err.message;
+        msg.className = 'text-sm text-center mt-3 text-red-500';
+      }
+      btn.disabled = false; btn.textContent = 'Send OTP';
+    }
+
+    async function verifyRegOTP() {
+      const otp = document.getElementById('regOtp').value.trim();
+      const msg = document.getElementById('regMsg');
+      if (!/^\d{6}$/.test(otp)) {
+        msg.textContent = 'Enter 6-digit OTP';
+        msg.className = 'text-sm text-center mt-3 text-red-500';
+        return;
+      }
+      try {
+        const data = await api('/verify-otp', {
+          method: 'POST',
+          body: JSON.stringify({
+            phone: regData.phone,
+            otp,
+            name: regData.name,
+            role: regData.role,
+            address: regData.address
+          })
+        });
+        setAuth(data.token, data.user);
+        showPage('home');
+      } catch (err) {
+        msg.textContent = err.message;
+        msg.className = 'text-sm text-center mt-3 text-red-500';
+      }
+    }
+
+    function backToRegForm() {
+      document.getElementById('regStep1').classList.remove('hidden');
+      document.getElementById('regStep2').classList.add('hidden');
+      document.getElementById('regMsg').textContent = '';
+    }
+
+    
+    
+    // ===== PWA Install =====
+    let deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      const btn = document.getElementById('installBtn');
+      if (btn) btn.classList.remove('hidden');
+    });
+
+    document.getElementById('installBtn')?.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        document.getElementById('installBtn').classList.add('hidden');
+      }
+      deferredPrompt = null;
+    });
+
+    // Register Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('SW registered', reg.scope))
+          .catch(err => console.log('SW failed', err));
+      });
+    }
+
+    // INIT
+    updateHeader();
+    showPage('home');
+  </script>
+</body>
+</html>
